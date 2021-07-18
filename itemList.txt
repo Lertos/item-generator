@@ -1,0 +1,2 @@
+test1	iron sword	a rusty sword	weapon	false	9
+test2	steel sword	a steel sword lol	armor	false	10
