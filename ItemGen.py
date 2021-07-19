@@ -1,4 +1,5 @@
 import sys
+import json
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QTextEdit, QLineEdit, QCompleter, QFormLayout, QPushButton, QCheckBox, QRadioButton
@@ -9,7 +10,7 @@ from PyQt5.QtGui import QStandardItem, QStandardItemModel, QFont
 #---------------------
 
 fileName = 'itemList.txt'
-itemDictionarySetup = ['id','name','examine','type','isStackable','shopValue','meta']
+itemDictionarySetup = ['id','name','examine','isStackable','shopValue','haValue','laValue','type','meta']
 typeSetupIndex = itemDictionarySetup.index('type')
 
 #List that holds all information of each item
@@ -36,7 +37,9 @@ class ItemGen(QWidget):
         self.btnItemSearch = self.addButton(self, 10, 'Load Item', 280, 70)
         self.btnClear = self.addButton(self, 10, 'Clear', 360, 70)
 
+        self.btnItemSearch.clicked.connect(self.loadExistingItem)
         self.btnClear.clicked.connect(self.clearAndResetAllFields)
+        
 
         #=ItemID
         self.lblItemID = self.addLabel(self, 50, 'ItemID')
@@ -188,6 +191,14 @@ class ItemGen(QWidget):
 
         self.btnCreate = self.addButton(self, 700, 'Create Item', 180, 120)
 
+        self.btnCreate.clicked.connect(self.addNewItem)
+
+        self.lblErrorMessage = self.addLabel(self, 725, '')
+        self.lblErrorMessage.setStyleSheet("color: red;")
+        self.lblErrorMessage.setAlignment(Qt.AlignCenter)
+        self.lblErrorMessage.resize(460, 20)
+
+
         #=Completer and setup
         completer = QCompleter(itemIDList, self)
         self.tbItemSearch.setCompleter(completer)
@@ -271,16 +282,6 @@ class ItemGen(QWidget):
                 self.showPotionSection()
             elif buttonText == 'Gear':
                 self.showGearSection()
-
-
-    #-- TODO - Adds a value to the current list of item ID's
-    def addEntry(self):
-        entryItem = self.input.text()
-        self.input.clear()
-        self.console.append(entryItem)
-
-        if not self.model.findItems(entryItem):
-            self.model.appendRow(QStandardItem(entryItem))
 
 
     #-- Shows Quest section
@@ -378,6 +379,7 @@ class ItemGen(QWidget):
         self.rbTypeGear.setChecked(False)
         self.rbTypeFood.setChecked(False)
         self.rbTypePotion.setChecked(False)
+        self.lblErrorMessage.setText('')
 
 
     #-- Hides all sub category fields
@@ -476,6 +478,171 @@ class ItemGen(QWidget):
         self.tbBonusPrayer.hide()
         self.tbBonusPrayer.setText('0')
 
+    def addNewItem(self):
+        itemID = self.tbItemID.text()
+        
+        if itemID in itemIDList:
+            self.lblErrorMessage.setText('That ItemID already exists')
+            return
+
+        #Add the new ItemID to the ItemIDList so that duplicates won't happen
+        itemIDList.append(itemID)
+
+        itemList[itemID] = {}
+
+        itemList[itemID]['name'] = self.tbDisplay.text()
+        itemList[itemID]['examine'] = self.tbExamine.text()
+        itemList[itemID]['isStackable'] = self.tbIsStackable.isChecked()
+        itemList[itemID]['shopValue'] = self.tbShopValue.text()
+        itemList[itemID]['haValue'] = self.tbHAValue.text()
+        itemList[itemID]['laValue'] = self.tbLAValue.text()
+
+        itemType = ''
+
+        if self.rbTypeQuest.isChecked():
+            itemType = 'quest'
+        elif self.rbTypeOther.isChecked():
+            itemType = 'other'
+        elif self.rbTypeGear.isChecked():
+            itemType = 'gear'
+        elif self.rbTypeFood.isChecked():
+            itemType = 'food'
+        elif self.rbTypePotion.isChecked():
+            itemType = 'potion'
+
+        if itemType == '':
+            self.lblErrorMessage.setText('No ItemType was specified')
+            return
+
+        itemList[itemID]['type'] = itemType
+        itemList[itemID]['meta'] = self.addItemMeta(itemList[itemID], itemType)
+
+        #print(itemList[itemID])
+
+
+    def addItemMeta(self, dictKey, itemType):
+        tempDict = {}
+
+        if itemType == 'gear':
+            tempDict['slot'] = self.tbSlot.text()
+            tempDict['is2Handed'] = self.cbIs2Handed.isChecked()
+            tempDict['attStab'] = self.tbAttStab.text()
+            tempDict['attSlash'] = self.tbAttSlash.text()
+            tempDict['attCrush'] = self.tbAttCrush.text()
+            tempDict['attRanged'] = self.tbAttRanged.text()
+            tempDict['attMagic'] = self.tbAttMagic.text()
+            tempDict['defStab'] = self.tbDefStab.text()
+            tempDict['defSlash'] = self.tbDefSlash.text()
+            tempDict['defCrush'] = self.tbDefCrush.text()
+            tempDict['defRanged'] = self.tbDefRanged.text()
+            tempDict['defMagic'] = self.tbDefMagic.text()
+            tempDict['bonusStr'] = self.tbBonusStr.text()
+            tempDict['bonusRangedStr'] = self.tbBonusRangedStr.text()
+            tempDict['bonusMagicStr'] = self.tbBonusMagicStr.text()
+            tempDict['bonusPrayer'] = self.tbBonusPrayer.text()
+
+        elif itemType == 'food':
+            tempDict['healthGained'] = self.tbFoodHealthGained.text()
+            tempDict['outputItemID'] = self.tbFoodOutputItem.text()
+            tempDict['timesEaten'] = self.tbFoodTimesEaten.text()
+
+        elif itemType == 'potion':
+            tempDict['isBoost'] = self.cbIsBoost.isChecked()
+            tempDict['boostStats'] = self.tbBoostStats.text()
+            tempDict['boostLevels'] = self.tbBoostLevels.text()
+            tempDict['antipoison'] = self.tbAntipoison.text()
+            tempDict['superAntipoison'] = self.tbSuperAntipoison.text()
+            tempDict['antifire'] = self.tbAntifire.text()
+            tempDict['curesVenom'] = self.cbCuresVenom.isChecked()
+            tempDict['isAntivenom'] = self.cbIsAntivenom.isChecked()
+            tempDict['restorePrayer'] = self.tbRestorePrayer.text()
+            tempDict['restoreStats'] = self.tbRestoreStats.text()
+
+        elif itemType == 'quest':
+            tempDict['questID'] = self.tbQuestID.text()
+
+        return tempDict
+
+
+    def loadExistingItem(self):
+        itemID = self.tbItemSearch.text()
+        
+        if itemID not in itemIDList:
+            self.lblErrorMessage.setText('No Item with that ItemID exists')
+            return
+
+        item = itemList[itemID]
+
+        self.tbItemID.setText(itemID)
+        self.tbDisplay.setText(item['name'])
+        self.tbExamine.setText(item['examine'])
+        self.tbIsStackable.setChecked(self.getBoolValue(item['isStackable']))
+        self.tbShopValue.setText(item['shopValue'])
+        self.tbHAValue.setText(item['haValue'])
+        self.tbLAValue.setText(item['laValue'])
+
+        itemType = item['type']
+
+        if itemType == 'gear':
+            self.rbTypeGear.setChecked(True)  
+        elif itemType == 'food':
+            self.rbTypeFood.setChecked(True)
+        elif itemType == 'potion':
+            self.rbTypePotion.setChecked(True)
+        elif itemType == 'quest':
+            self.rbTypeQuest.setChecked(True)
+        else:
+            self.rbTypeOther.setChecked(True)
+
+        self.loadItemMeta(item['meta'], itemType)
+
+
+    def loadItemMeta(self, itemMeta, itemType):
+        if itemType == 'gear':
+            self.tbSlot.setText(itemMeta['slot'])
+            self.cbIs2Handed.setChecked(self.getBoolValue(itemMeta['is2Handed']))
+            self.tbAttStab.setText(itemMeta['attStab'])
+            self.tbAttSlash.setText(itemMeta['attSlash'])
+            self.tbAttCrush.setText(itemMeta['attCrush'])
+            self.tbAttRanged.setText(itemMeta['attRanged'])
+            self.tbAttMagic.setText(itemMeta['attMagic'])
+            self.tbDefStab.setText(itemMeta['defStab'])
+            self.tbDefSlash.setText(itemMeta['defSlash'])
+            self.tbDefCrush.setText(itemMeta['defCrush'])
+            self.tbDefRanged.setText(itemMeta['defRanged'])
+            self.tbDefMagic.setText(itemMeta['defMagic'])
+            self.tbBonusStr.setText(itemMeta['bonusStr'])
+            self.tbBonusRangedStr.setText(itemMeta['bonusRangedStr'])
+            self.tbBonusMagicStr.setText(itemMeta['bonusMagicStr'])
+            self.tbBonusPrayer.setText(itemMeta['bonusPrayer'])
+
+        elif itemType == 'food':
+            self.tbFoodHealthGained.setText(itemMeta['healthGained'])
+            self.tbFoodOutputItem.setText(itemMeta['outputItemID'])
+            self.tbFoodTimesEaten.setText(itemMeta['timesEaten'])
+
+        elif itemType == 'potion':
+            self.cbIsBoost.setChecked(self.getBoolValue(itemMeta['isBoost']))
+            self.tbBoostStats.setText(itemMeta['boostStats'])
+            self.tbBoostLevels.setText(itemMeta['boostLevels'])
+            self.tbAntipoison.setText(itemMeta['antipoison'])
+            self.tbSuperAntipoison.setText(itemMeta['superAntipoison'])
+            self.tbAntifire.setText(itemMeta['antifire'])
+            self.cbCuresVenom.setChecked(self.getBoolValue(itemMeta['curesVenom']))
+            self.cbIsAntivenom.setChecked(self.getBoolValue(itemMeta['isAntivenom']))
+            self.tbRestorePrayer.setText(itemMeta['restorePrayer'])
+            self.tbRestoreStats.setText(itemMeta['restoreStats'])
+
+        elif itemType == 'quest':
+            self.tbQuestID.setText(itemMeta['questID'])
+
+
+    def getBoolValue(self, text):
+        if text == 'False':
+            return False
+        else:
+            return True
+
 
 #---------------------
 #   Other Methods
@@ -493,11 +660,16 @@ def loadItemList():
 
             #Add the new item - inserting it based on setup
             itemList[splitLine[0]] = {}
+            itemIDList.append(splitLine[0])
             
-            for index in range(1, len(itemDictionarySetup)-1):
+            for index in range(1, len(itemDictionarySetup)):
                 key = itemDictionarySetup[index]
                 value = splitLine[index]
-                itemList[splitLine[0]][key] = value
+
+                if key == 'meta':
+                    itemList[splitLine[0]][key] = json.loads(value)
+                else:    
+                    itemList[splitLine[0]][key] = value
 
             #Find the type of the item, then handle the meta accordingly
             itemType = splitLine[typeSetupIndex]
@@ -528,7 +700,7 @@ def saveItemList():
 #Load Items
 loadItemList()
 
-saveItemList()
+#saveItemList()
 
 #Start the GUI
 app = QApplication(sys.argv)

@@ -1,0 +1,1 @@
+iron_sword	Iron Sword	A rusty sword	False	9	8	7	gear
