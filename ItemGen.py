@@ -9,12 +9,14 @@ from PyQt5.QtGui import QStandardItem, QStandardItemModel, QFont
 #   Setup
 #---------------------
 
-fileName = 'itemList.txt'
+fileName = 'ItemList.json'
 itemDictionarySetup = ['id','name','examine','isStackable','shopValue','haValue','laValue','type','meta']
 typeSetupIndex = itemDictionarySetup.index('type')
 
 #List that holds all information of each item
-itemList = {} 
+itemstest = None
+itemList = {}
+
 
 #List that holds only the item ids
 itemIDList = []
@@ -28,7 +30,8 @@ class ItemGen(QWidget):
 
     def __init__(self):
         super().__init__()
-        self.resize(480, 780)
+        self.resize(480, 825)
+        self.setWindowTitle("Item Generator")
 
 
         #=Item Search
@@ -187,8 +190,19 @@ class ItemGen(QWidget):
         self.lblBonusPrayer = self.addLabel(self, 675, 'BonusPrayer')
         self.tbBonusPrayer = self.addTextbox(self, 675, '0')
 
+        self.lblAttackSpeed = self.addLabel(self, 700, 'AttackSpeed')
+        self.tbAttackSpeed = self.addTextbox(self, 700, '')
 
-        self.btnCreate = self.addButton(self, 700, 'Create Item', 180, 120)
+        self.lblQuestNeeded = self.addLabel(self, 725, 'QuestNeeded')
+        self.tbQuestNeeded = self.addTextbox(self, 725, '')
+
+        self.lblSkillsNeeded = self.addLabel(self, 750, 'SkillsNeeded')
+        self.tbSkillsNeeded = self.addTextbox(self, 750, '')
+
+        self.lblLevelsNeeded = self.addLabel(self, 775, 'LevelsNeeded')
+        self.tbLevelsNeeded = self.addTextbox(self, 775, '')
+
+        self.btnCreate = self.addButton(self, 800, 'Create Item', 180, 120)
 
         self.btnCreate.clicked.connect(self.addNewItem)
 
@@ -320,6 +334,14 @@ class ItemGen(QWidget):
         self.tbBonusMagicStr.show()
         self.lblBonusPrayer.show()
         self.tbBonusPrayer.show()
+        self.lblAttackSpeed.show()
+        self.tbAttackSpeed.show()
+        self.lblQuestNeeded.show()
+        self.tbQuestNeeded.show()
+        self.lblSkillsNeeded.show()
+        self.tbSkillsNeeded.show()
+        self.lblLevelsNeeded.show()
+        self.tbLevelsNeeded.show()
 
     #-- Shows Food section
     def showFoodSection(self):
@@ -473,6 +495,18 @@ class ItemGen(QWidget):
         self.lblBonusPrayer.hide()
         self.tbBonusPrayer.hide()
         self.tbBonusPrayer.setText('0')
+        self.lblAttackSpeed.hide()
+        self.tbAttackSpeed.hide()
+        self.tbAttackSpeed.setText('')
+        self.lblQuestNeeded.hide()
+        self.tbQuestNeeded.hide()
+        self.tbQuestNeeded.setText('')
+        self.lblSkillsNeeded.hide()
+        self.tbSkillsNeeded.hide()
+        self.tbSkillsNeeded.setText('')
+        self.lblLevelsNeeded.hide()
+        self.tbLevelsNeeded.hide()
+        self.tbLevelsNeeded.setText('')
 
     def addNewItem(self):
         itemID = self.tbItemID.text()
@@ -516,6 +550,10 @@ class ItemGen(QWidget):
 
         #print(itemList[itemID])
 
+        #Reset all fields
+        self.resetAllMainFields()
+        self.hideAllSubFields()
+
         #Add the new item to the file and save it
         saveItemList()
 
@@ -540,6 +578,10 @@ class ItemGen(QWidget):
             tempDict['bonusRangedStr'] = self.tbBonusRangedStr.text()
             tempDict['bonusMagicStr'] = self.tbBonusMagicStr.text()
             tempDict['bonusPrayer'] = self.tbBonusPrayer.text()
+            tempDict['attackSpeed'] = self.tbAttackSpeed.text()
+            tempDict['questNeeded'] = self.tbQuestNeeded.text()
+            tempDict['skillsNeeded'] = self.tbSkillsNeeded.text()
+            tempDict['levelsNeeded'] = self.tbLevelsNeeded.text()
 
         elif itemType == 'food':
             tempDict['healthGained'] = self.tbFoodHealthGained.text()
@@ -571,12 +613,14 @@ class ItemGen(QWidget):
             self.lblErrorMessage.setText('No Item with that ItemID exists')
             return
 
+        print(itemID)
+        print(itemList)
         item = itemList[itemID]
 
         self.tbItemID.setText(itemID)
         self.tbDisplay.setText(item['name'])
         self.tbExamine.setText(item['examine'])
-        self.tbIsStackable.setChecked(self.getBoolValue(item['isStackable']))
+        self.tbIsStackable.setChecked(item['isStackable'])
         self.tbShopValue.setText(item['shopValue'])
         self.tbHAValue.setText(item['haValue'])
         self.tbLAValue.setText(item['laValue'])
@@ -600,7 +644,7 @@ class ItemGen(QWidget):
     def loadItemMeta(self, itemMeta, itemType):
         if itemType == 'gear':
             self.tbSlot.setText(itemMeta['slot'])
-            self.cbIs2Handed.setChecked(self.getBoolValue(itemMeta['is2Handed']))
+            self.cbIs2Handed.setChecked(itemMeta['is2Handed'])
             self.tbAttStab.setText(itemMeta['attStab'])
             self.tbAttSlash.setText(itemMeta['attSlash'])
             self.tbAttCrush.setText(itemMeta['attCrush'])
@@ -615,6 +659,10 @@ class ItemGen(QWidget):
             self.tbBonusRangedStr.setText(itemMeta['bonusRangedStr'])
             self.tbBonusMagicStr.setText(itemMeta['bonusMagicStr'])
             self.tbBonusPrayer.setText(itemMeta['bonusPrayer'])
+            self.tbAttackSpeed.setText(itemMeta['attackSpeed'])
+            self.tbQuestNeeded.setText(itemMeta['questNeeded'])
+            self.tbSkillsNeeded.setText(itemMeta['skillsNeeded'])
+            self.tbLevelsNeeded.setText(itemMeta['levelsNeeded'])
 
         elif itemType == 'food':
             self.tbFoodHealthGained.setText(itemMeta['healthGained'])
@@ -622,26 +670,20 @@ class ItemGen(QWidget):
             self.tbFoodTimesEaten.setText(itemMeta['timesEaten'])
 
         elif itemType == 'potion':
-            self.cbIsBoost.setChecked(self.getBoolValue(itemMeta['isBoost']))
+            self.cbIsBoost.setChecked(itemMeta['isBoost'])
             self.tbBoostStats.setText(itemMeta['boostStats'])
             self.tbBoostLevels.setText(itemMeta['boostLevels'])
             self.tbAntipoison.setText(itemMeta['antipoison'])
             self.tbSuperAntipoison.setText(itemMeta['superAntipoison'])
             self.tbAntifire.setText(itemMeta['antifire'])
-            self.cbCuresVenom.setChecked(self.getBoolValue(itemMeta['curesVenom']))
-            self.cbIsAntivenom.setChecked(self.getBoolValue(itemMeta['isAntivenom']))
+            self.cbCuresVenom.setChecked(itemMeta['curesVenom'])
+            self.cbIsAntivenom.setChecked(itemMeta['isAntivenom'])
             self.tbRestorePrayer.setText(itemMeta['restorePrayer'])
             self.tbRestoreStats.setText(itemMeta['restoreStats'])
 
         elif itemType == 'quest':
             self.tbQuestID.setText(itemMeta['questID'])
 
-
-    def getBoolValue(self, text):
-        if text == 'False':
-            return False
-        else:
-            return True
 
     def fillCompleterData(self):
         self.completer = QCompleter(itemIDList, self)
@@ -654,62 +696,25 @@ class ItemGen(QWidget):
 #   Other Methods
 #---------------------
 
-#-- Loads the file with all of the item information into the item dictionaries
-def loadItemList():
-    with open(fileName) as itemFile:
-        for row in itemFile.readlines():
-            #Remove all new line characters from the raw text
-            removeNewLineChars = row.replace('\n','')
-            
-            #Split the line based on tab characters
-            splitLine = removeNewLineChars.split('\t')
-
-            #Add the new item - inserting it based on setup
-            itemList[splitLine[0]] = {}
-            itemIDList.append(splitLine[0])
-            
-            for index in range(1, len(itemDictionarySetup)):
-                key = itemDictionarySetup[index]
-                value = splitLine[index]
-
-                if key == 'meta':
-                    itemList[splitLine[0]][key] = json.loads(value)
-                else:    
-                    itemList[splitLine[0]][key] = value
-
-            #Find the type of the item, then handle the meta accordingly
-            itemType = splitLine[typeSetupIndex]
-
-    #print(itemList)
-
-
 #-- Saves the item dictionary to the output file to update the file with any changes
 def saveItemList():
 
     with open(fileName, mode="w") as itemFile:
-        firstItem = True
-        
-        for item in itemList:
-            if firstItem == True:
-                itemFile.write(item)
-
-                for value in itemList[item].values():
-                    if isinstance(value, dict):
-                        itemFile.write('\t' + str(value).replace("'",'"'))
-                    else:
-                        itemFile.write('\t' + str(value))
-
-                itemFile.write('\n')
-
-        
+        json.dump(itemList, itemFile)   
 
 
 #---------------------
 #   Main Application
 #---------------------
 
-#Load Items
-loadItemList()
+#Load Items from the json file
+with open(fileName) as itemFile:
+    itemList = json.load(itemFile)
+
+#load each item into the list that the completer uses to check for existing items
+for key in itemList.keys():
+        itemIDList.append(key)
+
 
 #Start the GUI
 app = QApplication(sys.argv)
