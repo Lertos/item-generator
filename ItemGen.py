@@ -1,5 +1,6 @@
 import sys
 import json
+from functools import partial
 from PyQt5 import QtCore
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QTextEdit, QLineEdit, QCompleter, QFormLayout, QPushButton, QCheckBox, QRadioButton
@@ -202,9 +203,13 @@ class ItemGen(QWidget):
         self.lblLevelsNeeded = self.addLabel(self, 775, 'LevelsNeeded')
         self.tbLevelsNeeded = self.addTextbox(self, 775, '')
 
-        self.btnCreate = self.addButton(self, 800, 'Create Item', 180, 120)
 
-        self.btnCreate.clicked.connect(self.addNewItem)
+        self.btnCreate = self.addButton(self, 800, 'Create Item', 110, 120)
+        self.btnCreate.clicked.connect(partial(self.addNewItem,action='create'))
+
+        self.btnUpdate = self.addButton(self, 800, 'Update Item', 240, 120)
+        self.btnUpdate.clicked.connect(partial(self.addNewItem,action='update'))
+
 
         self.lblErrorMessage = self.addLabel(self, 725, '')
         self.lblErrorMessage.setStyleSheet("color: red;")
@@ -221,8 +226,6 @@ class ItemGen(QWidget):
         self.hideAllSubFields()
 
 
-
-
     #-- Adds a label with default positioning and behavior
     def addLabel(self, parent, yPos, text):
         label = QLabel(parent)
@@ -236,6 +239,7 @@ class ItemGen(QWidget):
         
         return label
 
+
     #-- Adds a line edit with default positioning and behavior
     def addTextbox(self, parent, yPos, text, xPos=140):
         textbox = QLineEdit(parent)
@@ -245,6 +249,7 @@ class ItemGen(QWidget):
         textbox.resize(200, 20)
         
         return textbox
+
 
     #-- Adds a button with default positioning but not connecting a function to it
     def addButton(self, parent, yPos, text, xPos=350, xSize=120):
@@ -256,6 +261,7 @@ class ItemGen(QWidget):
         
         return button
 
+
     #-- Adds a checkbox with default positioning but not connecting a function to it
     def addCheckbox(self, parent, yPos, xPos=140):
         checkbox = QCheckBox(parent)
@@ -264,6 +270,7 @@ class ItemGen(QWidget):
         checkbox.setStyleSheet("padding-top: 4px;") 
         
         return checkbox
+
 
     #-- Adds a radio button with default positioning but not connecting a function to it
     def addRadiobutton(self, parent, yPos, text, xPos):
@@ -343,6 +350,7 @@ class ItemGen(QWidget):
         self.lblLevelsNeeded.show()
         self.tbLevelsNeeded.show()
 
+
     #-- Shows Food section
     def showFoodSection(self):
         self.lblFoodHealthGained.show()
@@ -351,6 +359,7 @@ class ItemGen(QWidget):
         self.tbFoodOutputItem.show()
         self.lblFoodTimesEaten.show()
         self.tbFoodTimesEaten.show()
+
 
     #-- Shows Potion section
     def showPotionSection(self):
@@ -508,18 +517,28 @@ class ItemGen(QWidget):
         self.tbLevelsNeeded.hide()
         self.tbLevelsNeeded.setText('')
 
-    def addNewItem(self):
+
+    #-- Adds a new item to the item list, converting fields into the mapping of dictionary keys
+    def addNewItem(self, action):
         itemID = self.tbItemID.text()
         
-        if itemID in itemIDList:
-            self.lblErrorMessage.setText('That ItemID already exists')
-            return
+        #If action='create' - check to make sure the itemID DOES NOT exist, adding it to the lookup itemID list
+        if action == 'create':
+            if itemID in itemIDList:
+                self.lblErrorMessage.setText('That ItemID already exists')
+                return
 
-        #Add the new ItemID to the ItemIDList so that duplicates won't happen
-        itemIDList.append(itemID)
-        self.fillCompleterData()
+            #Add the new ItemID to the ItemIDList so that duplicates won't happen
+            itemIDList.append(itemID)
+            self.fillCompleterData()
 
-        itemList[itemID] = {}
+            itemList[itemID] = {}
+        #If action='update' - check to make sure the itemID DOES exist
+        elif action == 'update':
+            if itemID not in itemIDList:
+                self.lblErrorMessage.setText('The ItemID provided doesnt exist so it cannot be updated')
+                return
+
 
         itemList[itemID]['name'] = self.tbDisplay.text()
         itemList[itemID]['examine'] = self.tbExamine.text()
@@ -548,8 +567,6 @@ class ItemGen(QWidget):
         itemList[itemID]['type'] = itemType
         itemList[itemID]['meta'] = self.addItemMeta(itemList[itemID], itemType)
 
-        #print(itemList[itemID])
-
         #Reset all fields
         self.resetAllMainFields()
         self.hideAllSubFields()
@@ -558,6 +575,7 @@ class ItemGen(QWidget):
         saveItemList()
 
 
+    #-- Adds the item meta of an item as a sub dictionary
     def addItemMeta(self, dictKey, itemType):
         tempDict = {}
 
@@ -606,6 +624,7 @@ class ItemGen(QWidget):
         return tempDict
 
 
+    #-- Checks the item list for a specific itemID. If found, load the data, mapping dictionary keys to specific fields
     def loadExistingItem(self):
         itemID = self.tbItemSearch.text()
         
@@ -641,6 +660,7 @@ class ItemGen(QWidget):
         self.loadItemMeta(item['meta'], itemType)
 
 
+    #-- From the dictionary, load the item meta based on the item type
     def loadItemMeta(self, itemMeta, itemType):
         if itemType == 'gear':
             self.tbSlot.setText(itemMeta['slot'])
@@ -685,6 +705,7 @@ class ItemGen(QWidget):
             self.tbQuestID.setText(itemMeta['questID'])
 
 
+    #-- Used to update the QCompleter with the newest version of the list
     def fillCompleterData(self):
         self.completer = QCompleter(itemIDList, self)
         self.tbItemSearch.setCompleter(self.completer)
