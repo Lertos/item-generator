@@ -17,7 +17,7 @@ typeSetupIndex = itemDictionarySetup.index('type')
 itemList = {} 
 
 #List that holds only the item ids
-itemIDList = ['dee']
+itemIDList = []
 
 
 #---------------------
@@ -30,7 +30,6 @@ class ItemGen(QWidget):
         super().__init__()
         self.resize(480, 780)
 
-        #self.input.editingFinished.connect(self.addEntry)
 
         #=Item Search
         self.tbItemSearch = self.addTextbox(self, 10, '', 70)
@@ -200,10 +199,7 @@ class ItemGen(QWidget):
 
 
         #=Completer and setup
-        completer = QCompleter(itemIDList, self)
-        self.tbItemSearch.setCompleter(completer)
-        self.tbItemID.setCompleter(completer)
-        self.tbFoodOutputItem.setCompleter(completer)
+        self.fillCompleterData()
 
 
         #Hide all sub sections to start with
@@ -487,6 +483,7 @@ class ItemGen(QWidget):
 
         #Add the new ItemID to the ItemIDList so that duplicates won't happen
         itemIDList.append(itemID)
+        self.fillCompleterData()
 
         itemList[itemID] = {}
 
@@ -518,6 +515,9 @@ class ItemGen(QWidget):
         itemList[itemID]['meta'] = self.addItemMeta(itemList[itemID], itemType)
 
         #print(itemList[itemID])
+
+        #Add the new item to the file and save it
+        saveItemList()
 
 
     def addItemMeta(self, dictKey, itemType):
@@ -643,6 +643,12 @@ class ItemGen(QWidget):
         else:
             return True
 
+    def fillCompleterData(self):
+        self.completer = QCompleter(itemIDList, self)
+        self.tbItemSearch.setCompleter(self.completer)
+        self.tbItemID.setCompleter(self.completer)
+        self.tbFoodOutputItem.setCompleter(self.completer)
+
 
 #---------------------
 #   Other Methods
@@ -674,21 +680,26 @@ def loadItemList():
             #Find the type of the item, then handle the meta accordingly
             itemType = splitLine[typeSetupIndex]
 
-    print(itemList)
+    #print(itemList)
 
 
 #-- Saves the item dictionary to the output file to update the file with any changes
 def saveItemList():
 
-    with open("myfile.txt", mode="w") as myfile:
+    with open(fileName, mode="w") as itemFile:
         firstItem = True
         
         for item in itemList:
             if firstItem == True:
-                myfile.write(item)
+                itemFile.write(item)
 
                 for value in itemList[item].values():
-                    myfile.write('\t' + value)
+                    if isinstance(value, dict):
+                        itemFile.write('\t' + str(value).replace("'",'"'))
+                    else:
+                        itemFile.write('\t' + str(value))
+
+                itemFile.write('\n')
 
         
 
@@ -699,8 +710,6 @@ def saveItemList():
 
 #Load Items
 loadItemList()
-
-#saveItemList()
 
 #Start the GUI
 app = QApplication(sys.argv)

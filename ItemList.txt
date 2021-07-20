@@ -1,3 +1,0 @@
-iron_sword	Iron Sword	A rusty sword	False	9	8	7	gear	{}
-steel_sword	Steel Sword	A steel sword	False	10	6	5	gear	{}
-cooked_salmon	Salmon	Salmon cooked to perfection	False	22	5	3	quest	{"questID":"sillyGoose"}
